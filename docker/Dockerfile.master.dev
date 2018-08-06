@@ -1,0 +1,19 @@
+FROM golang:alpine
+
+COPY ./master /go/src/app
+WORKDIR /go/src/app
+
+RUN apk add --no-cache git
+RUN go get -v ./...
+RUN go install -v ./...
+RUN go build -o main
+
+CMD if [ ${APP_ENV} = production ]; \
+	then \
+	main; \
+	else \
+	go get github.com/pilu/fresh && \
+	fresh; \
+	fi
+
+EXPOSE 3000

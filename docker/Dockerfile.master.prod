@@ -1,0 +1,18 @@
+FROM golang:alpine AS builder
+
+COPY ./master /go/src/app
+WORKDIR /go/src/app
+
+RUN apk add --no-cache git
+RUN go get -v ./...
+RUN go install -v ./...
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+COPY --from=builder /go/bin/app /app
+
+ENTRYPOINT ./app
+
+LABEL Name=codechallenge Version=0.0.1
+EXPOSE 3000

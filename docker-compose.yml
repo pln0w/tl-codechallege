@@ -1,0 +1,97 @@
+version: '2'
+
+services:
+
+  data:
+    image: tianon/true
+    volumes:
+      - './docker/data:/data'
+
+  #
+  # SLAVE NODE (worker)
+  #
+  node-slave:
+    image: tl-node-slave
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.slave.dev # Can be changed for prod
+    networks:
+      - codechallenge
+    depends_on:
+      - data
+    links:
+      - data
+    environment:
+      PORT: 4000
+      FOLDER: /data
+
+  #
+  # TWO MASTER NODES
+  #
+  node-master-primary:
+    image: tl-node-master-primary
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.master.dev # Can be changed for prod
+    networks:
+      - codechallenge
+    ports:
+      - "8001:80"
+    environment:
+      LB_HOST: haproxy
+      LB_PORT: 4000
+      PORT: 80
+      WHOAMI: PRIMARY
+  
+  node-master-secondary:
+    image: tl-node-master-secondary
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.master.dev # Can be changed for prod
+    networks:
+      - codechallenge
+    ports:
+      - "8002:80"
+    environment:
+      LB_HOST: haproxy
+      LB_PORT: 4000
+      PORT: 80
+      WHOAMI: SECONDARY
+  
+  #
+  # LOAD BALANCER (Nginx)
+  # Host: codechallenge.local
+  #
+  load-balancer:
+    image: tl-load-balancer
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.nginx
+    networks:
+      - codechallenge
+    ports:
+      - "80:80"
+
+  #
+  # HAPROXY BETWEEN MASTERS AND SLAVES
+  #
+  haproxy:
+    image: eeacms/haproxy
+    container_name: haproxy
+    ports:
+      - "4000:4000"
+    depends_on:
+      - node-master-primary
+      - node-master-secondary
+      - node-slave
+    networks:
+      - codechallenge
+    environment:
+      BACKENDS: "node-slave"
+      DNS_ENABLED: "true"
+      LOG_LEVEL: "debug"
+      VIRTUAL_HOST: http://lb.codechallenge.local
+
+networks:
+  codechallenge:
+    driver: bridge
