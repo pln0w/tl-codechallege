@@ -1,19 +1,13 @@
-FROM golang:alpine
+FROM golang:latest
 
 COPY ./slave /go/src/app
 WORKDIR /go/src/app
+RUN mkdir /go/src/app/logs
 
-RUN apk add --no-cache git
-RUN go get -v ./...
-RUN go install -v ./...
+RUN go get ./...
+RUN go install ./...
 RUN go build -o main
 
-CMD if [ ${APP_ENV} = production ]; \
-	then \
-	main; \
-	else \
-	go get github.com/pilu/fresh && \
-	fresh; \
-	fi
+CMD go get github.com/pilu/fresh && cd /go/src/app && fresh
 
 EXPOSE 4000

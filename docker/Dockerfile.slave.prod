@@ -3,6 +3,7 @@ FROM golang:alpine AS builder
 
 COPY ./slave /go/src/app
 WORKDIR /go/src/app
+RUN mkdir /go/src/app/logs
 
 RUN apk add --no-cache git
 RUN go get -v ./...

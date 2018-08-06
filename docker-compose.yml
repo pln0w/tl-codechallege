@@ -17,11 +17,14 @@ services:
       dockerfile: ./docker/Dockerfile.slave.dev # Can be changed for prod
     networks:
       - codechallenge
+    volumes:
+      - './logs:/go/src/app/logs'
     depends_on:
       - data
     links:
       - data
     environment:
+      LOG_FILE: "logs/slave.log"
       PORT: 4000
       FOLDER: /data
 
@@ -37,8 +40,11 @@ services:
       - codechallenge
     ports:
       - "8001:80"
+    volumes:
+      - './logs:/go/src/app/logs'
     environment:
-      LB_HOST: haproxy
+      LOG_FILE: "logs/master-primary.log"
+      LB_HOST: http://haproxy
       LB_PORT: 4000
       PORT: 80
       WHOAMI: PRIMARY
@@ -52,8 +58,11 @@ services:
       - codechallenge
     ports:
       - "8002:80"
+    volumes:
+      - './logs:/go/src/app/logs'
     environment:
-      LB_HOST: haproxy
+      LOG_FILE: "logs/master-secondary.log"
+      LB_HOST: http://haproxy
       LB_PORT: 4000
       PORT: 80
       WHOAMI: SECONDARY
@@ -71,6 +80,8 @@ services:
       - codechallenge
     ports:
       - "80:80"
+    environment:
+      VIRTUAL_PORT: 80
 
   #
   # HAPROXY BETWEEN MASTERS AND SLAVES
@@ -80,6 +91,10 @@ services:
     container_name: haproxy
     ports:
       - "4000:4000"
+    links:
+      - node-master-primary
+      - node-master-secondary
+      - node-slave
     depends_on:
       - node-master-primary
       - node-master-secondary
@@ -87,7 +102,7 @@ services:
     networks:
       - codechallenge
     environment:
-      BACKENDS: "node-slave"
+      BACKENDS: "node-slave node-master"
       DNS_ENABLED: "true"
       LOG_LEVEL: "debug"
       VIRTUAL_HOST: http://lb.codechallenge.local
