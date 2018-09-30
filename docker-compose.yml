@@ -2,111 +2,135 @@ version: '2'
 
 services:
 
+
+  #
+  # Data mounted volume
+  #
   data:
     image: tianon/true
+    container_name: fw-data
     volumes:
-      - './docker/data:/data'
+      - './data:/data'
 
-  #
-  # SLAVE NODE (worker)
-  #
-  node-slave:
-    image: tl-node-slave
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile.slave.dev # Can be changed for prod
-    networks:
-      - codechallenge
-    volumes:
-      - './logs:/go/src/app/logs'
-    depends_on:
-      - data
-    links:
-      - data
-    environment:
-      LOG_FILE: "logs/slave.log"
-      PORT: 4000
-      FOLDER: /data
 
-  #
-  # TWO MASTER NODES
-  #
-  node-master-primary:
-    image: tl-node-master-primary
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile.master.dev # Can be changed for prod
-    networks:
-      - codechallenge
-    ports:
-      - "8001:80"
-    volumes:
-      - './logs:/go/src/app/logs'
-    environment:
-      LOG_FILE: "logs/master-primary.log"
-      LB_HOST: http://haproxy
-      LB_PORT: 4000
-      PORT: 80
-      WHOAMI: PRIMARY
-  
-  node-master-secondary:
-    image: tl-node-master-secondary
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile.master.dev # Can be changed for prod
-    networks:
-      - codechallenge
-    ports:
-      - "8002:80"
-    volumes:
-      - './logs:/go/src/app/logs'
-    environment:
-      LOG_FILE: "logs/master-secondary.log"
-      LB_HOST: http://haproxy
-      LB_PORT: 4000
-      PORT: 80
-      WHOAMI: SECONDARY
-  
   #
   # LOAD BALANCER (Nginx)
-  # Host: codechallenge.local
+  # Host: filewatcher.local
   #
   load-balancer:
-    image: tl-load-balancer
+    image: fw-load-balancer
     build:
       context: .
       dockerfile: ./docker/Dockerfile.nginx
+    container_name: fw-load-balancer
     networks:
-      - codechallenge
+      - filewatcher
     ports:
       - "80:80"
     environment:
       VIRTUAL_PORT: 80
+      VIRTUAL_HOST: filewatcher.local
 
   #
-  # HAPROXY BETWEEN MASTERS AND SLAVES
+  # MASTER NODE - primary
   #
-  haproxy:
-    image: eeacms/haproxy
-    container_name: haproxy
-    ports:
-      - "4000:4000"
-    links:
-      - node-master-primary
-      - node-master-secondary
-      - node-slave
-    depends_on:
-      - node-master-primary
-      - node-master-secondary
-      - node-slave
+  server-node-primary:
+    image: fw-server-node-primary
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.server.dev  # Can be changed for prod
+    container_name: fw-server-node-primary
     networks:
-      - codechallenge
+      - filewatcher
+    ports:
+      - "8001:80"
+    volumes:
+      - './logs:/logs'
+      - './server:/go/src/server'
     environment:
-      BACKENDS: "node-slave node-master"
-      DNS_ENABLED: "true"
-      LOG_LEVEL: "debug"
-      VIRTUAL_HOST: http://lb.codechallenge.local
+      LOG_FILE: "/logs/server-primary.log"
+      # LB_HOST: lb.filewatcher.local
+      # LB_PORT: 4000
+      PORT: 80
+      WS_PORT: 12345
+      WHOAMI: PRIMARY
+  
+
+  #
+  # MASTER NODE - secondary
+  #
+  server-node-secondary:
+    image: fw-server-node-secondary
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.server.dev  # Can be changed for prod
+    container_name: fw-server-node-secondary
+    networks:
+      - filewatcher
+    ports:
+      - "8002:80"
+    volumes:
+      - './logs:/logs'
+      - './server:/go/src/server'
+    environment:
+      LOG_FILE: "/logs/server-secondary.log"
+      # LB_HOST: lb.filewatcher.local
+      # LB_PORT: 4000
+      PORT: 80
+      WS_PORT: 12345
+      WHOAMI: SECONDARY
+
+
+  # #
+  # # HAPROXY BETWEEN MASTERS AND WATCHERS
+  # #
+  # haproxy:
+  #   image: eeacms/haproxy
+  #   container_name: fw-haproxy
+  #   ports:
+  #     - "4000:4000"
+  #     - "12345:12345"
+  #   links:
+  #     - server-node-primary
+  #     - server-node-secondary
+  #     - watcher-node
+  #   depends_on:
+  #     - server-node-primary
+  #     - server-node-secondary
+  #     - watcher-node
+  #   networks:
+  #     - filewatcher
+  #   environment:
+  #     BACKENDS: "watcher-node server-node-primary server-node-secondary"
+  #     DNS_ENABLED: "true"
+  #     LOG_LEVEL: "debug"
+  #     VIRTUAL_HOST: lb.filewatcher.local
+
+
+  #
+  # WATCHER NODE 
+  #
+  watcher-node:
+    image: fw-watcher-node
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.watcher.dev # Can be changed for prod
+    container_name: fw-watcher-node
+    networks:
+      - filewatcher
+    volumes:
+      - './logs:/logs'
+      - './watcher:/go/src/watcher'
+    depends_on:
+      - data
+    links:
+      - data
+    environment:
+      LOG_FILE: "/logs/watcher.log"
+      WS_PORT: 12345
+      DIR_PATH: /data
+
 
 networks:
-  codechallenge:
+  filewatcher:
     driver: bridge

@@ -1,0 +1,14 @@
+FROM golang:latest
+
+COPY ./watcher /go/src/watcher
+WORKDIR /go/src/watcher
+
+RUN mkdir /logs
+
+RUN go get -v ./...
+RUN go install -v ./...
+
+COPY ./runner.conf /runner.conf
+CMD go get github.com/pilu/fresh && fresh -c /runner.conf
+
+EXPOSE 4000

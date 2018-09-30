@@ -1,0 +1,15 @@
+FROM golang:latest
+
+COPY ./server /go/src/server
+
+WORKDIR /go/src/server
+
+RUN mkdir /logs
+
+RUN go get -v ./...
+RUN go install -v ./...
+
+COPY ./runner.conf /runner.conf
+CMD go get github.com/pilu/fresh && fresh -c /runner.conf
+
+EXPOSE 3000

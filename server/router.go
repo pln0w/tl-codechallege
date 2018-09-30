@@ -20,16 +20,16 @@ type Route struct {
 type Routes []Route
 
 var (
-	ctrl = NewController()
+	handler = NewHandlerController()
 
 	routes = Routes{
 		Route{
 			"Index", "GET",
-			"/", ctrl.Index,
+			"/", handler.Index,
 		},
 		Route{
 			"HealthCheck", "GET",
-			"/health", ctrl.HealthCheck,
+			"/health", handler.HealthCheck,
 		},
 	}
 )
