@@ -26,7 +26,7 @@ func NewHandlerController() *HandlerController {
 	}
 }
 
-// Index - function gets request, dispatch proper action to workers via gRPC
+// Index - function gets request, dispatch proper action to workers
 // and return results back received content
 func (ctrl *HandlerController) Index(w http.ResponseWriter, r *http.Request) {
 
@@ -40,7 +40,9 @@ func (ctrl *HandlerController) Index(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Here call WS breadcast for response
+	for c := range hub.clients {
+		c.send <- []byte("test")
+	}
 
 	directories = append(directories, &Directory{
 		Path:  "",

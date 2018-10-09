@@ -59,7 +59,9 @@ func NewRouter() *mux.Router {
 			Handler(LogRequest(route.HandlerFunc))
 	}
 
-	router.HandleFunc("/ws/test", wsserver)
+	router.HandleFunc("/ws/test", func(w http.ResponseWriter, r *http.Request) {
+		wsserver(hub, w, r)
+	})
 
 	return router
 }
