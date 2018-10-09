@@ -39,13 +39,13 @@ func main() {
 	var addr = flag.String("addr", fmt.Sprintf("0.0.0.0:%s", port), "HTTP service URL")
 
 	// Define WebSocket server port
-	wsport := "12345"
-	if os.Getenv("WS_PORT") != "" {
-		wsport = os.Getenv("WS_PORT")
-	}
+	// wsport := "12345"
+	// if os.Getenv("WS_PORT") != "" {
+	// 	wsport = os.Getenv("WS_PORT")
+	// }
 
-	// Prepare WebSocket address
-	var wsaddr = flag.String("wsaddr", fmt.Sprintf("0.0.0.0:%s", wsport), "WebSocker service URL")
+	// // Prepare WebSocket address
+	// var wsaddr = flag.String("wsaddr", fmt.Sprintf("0.0.0.0:%s", wsport), "WebSocker service URL")
 
 	flag.Parse()
 
@@ -57,13 +57,13 @@ func main() {
 		log.Error(err.Error())
 	}
 
-	// Register WS handler
-	http.HandleFunc("/ws/test", wsserver)
+	// // Register WS handler
+	// http.HandleFunc("/ws/test", wsserver)
 
-	// Serve over WebSocket (internal communication)
-	if err := http.ListenAndServe(*wsaddr, nil); err != nil {
-		log.Error(err.Error())
-	}
+	// // Serve over WebSocket (internal communication)
+	// if err := http.ListenAndServe(*wsaddr, nil); err != nil {
+	// 	log.Error(err.Error())
+	// }
 
-	log.Printf("SERVER %s listening on [http: %s] and [websocket: %s]", os.Getenv("WHOAMI"), port, wsport)
+	log.Printf("SERVER %s listening on [http: %s]", os.Getenv("WHOAMI"), port)
 }

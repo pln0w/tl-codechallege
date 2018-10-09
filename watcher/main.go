@@ -34,15 +34,21 @@ func init() {
 func main() {
 
 	// Define WebSocket server port
-	wsport := "12345"
-	if os.Getenv("WS_PORT") != "" {
-		wsport = os.Getenv("WS_PORT")
+	lbport := "80"
+	if os.Getenv("LB_PORT") != "" {
+		lbport = os.Getenv("LB_PORT")
+	}
+
+	// Define WebSocket server host
+	lbhost := ""
+	if os.Getenv("LB_HOST") != "" {
+		lbhost = os.Getenv("LB_HOST")
 	}
 
 	hostname, _ := os.Hostname()
 
 	// Prepare WebSocket address
-	var wsaddr = flag.String("wsaddr", fmt.Sprintf("filewatcher.local:%s", wsport), "WebSocker service URL")
+	var wsaddr = flag.String("wsaddr", fmt.Sprintf("%s:%s", lbhost, lbport), "WebSocker service URL")
 	flag.Parse()
 
 	u := url.URL{Scheme: "ws", Host: *wsaddr, Path: "/ws/test"}
@@ -56,6 +62,8 @@ func main() {
 		log.Error(err.Error())
 	}
 	defer c.Close()
+
+	fmt.Printf("REMOTE ADDR: #%v", c.RemoteAddr)
 
 	done := make(chan struct{})
 
