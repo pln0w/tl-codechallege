@@ -27,6 +27,7 @@ func NewHandlerController() *HandlerController {
 func (ctrl *HandlerController) Index(w http.ResponseWriter, r *http.Request) {
 
 	var directories []*Directory
+
 	for c := range hub.clients {
 		files := []string{}
 		directories = append(directories, &Directory{

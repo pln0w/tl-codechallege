@@ -11,7 +11,7 @@ There is one HTTP server able to recive commands. We spawn multiple workers list
 `make build` - builds images and runs and attaches server container
 
 ## How to test entire flow
-`make test` - automatically presents entire flow
+`make full-test` - automatically presents entire flow
 
 ## Makefile commands to play with
 
@@ -24,3 +24,5 @@ There is one HTTP server able to recive commands. We spawn multiple workers list
 * Dump all watchers  
 `make dump-watchers` - call server to response with all connected watchers
 
+* Call watchers end point  
+`make simple-test` - call server to response with all files within all watchers directories

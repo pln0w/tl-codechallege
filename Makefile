@@ -9,12 +9,15 @@ add-watcher:
 	docker-compose run -e DIR=$(dir) -d watcher-node
 
 run-watcher:
-	docker-compose up -e DIR=$(dir) watcher-node
+	docker-compose run -e DIR=$(dir) watcher-node
 
 dump-watchers:
 	curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://filewatcher.local/watchers
 
-test:
+simple-test:
+	curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://filewatcher.local
+
+full-test:
 	make add-watcher dir=/data/aaa
 	make add-watcher dir=/data/bbb
 	make add-watcher dir=/data/ccc

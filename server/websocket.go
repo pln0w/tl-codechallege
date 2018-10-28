@@ -46,51 +46,33 @@ type Client struct {
 	dir string
 }
 
-// readPump pumps messages from the websocket connection to the hub.
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
-func (c *Client) readPump() {
-	// defer c.conn.Close()
-	_, _, err := c.conn.ReadMessage()
-	if err != nil {
-		return
+// read function gets messages from the websocket connection
+func (c *Client) read() {
+	defer func() {
+		c.conn.Close()
+	}()
+
+	for {
+		_, received, err := c.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+				fmt.Printf("[read error]: %v\n", err.Error())
+			}
+			break
+		}
+
+		fmt.Printf("received: %s\n", received)
+
+		// if received == "pattern" { do() }
 	}
-	// defer func() {
-	// 	c.hub.unregister <- c
-	// 	c.conn.Close()
-	// }()
-
-	// c.conn.SetReadLimit(maxMessageSize)
-	// c.conn.SetReadDeadline(time.Now().Add(time.Hour * 2242560))
-	// c.conn.SetPongHandler(func(string) error {
-	// 	c.conn.SetReadDeadline(time.Now().Add(time.Hour * 2242560))
-	// 	return nil
-	// })
-
-	// time.Sleep(2 * time.Second)
-	// // Read messages from worker forever and print to
-	// // standard output with worker IP address
-	// for {
-	// 	_, message, err := c.conn.ReadMessage()
-	// 	if err != nil {
-	// 		fmt.Printf("[read error]: %v\n", err.Error())
-	// 		break
-	// 	}
-
-	// 	message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-	// 	fmt.Printf("%s says: %s\n", c.conn.RemoteAddr(), string(message))
-	// }
 }
 
-// writePump pumps messages from the hub to the websocket connection.
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
-func (c *Client) writePump(hub *Hub) {
+// write function sends messages to the websocket connection.
+func (c *Client) write(hub *Hub) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+		c.conn.Close()
 	}()
 
 	for {
@@ -98,7 +80,10 @@ func (c *Client) writePump(hub *Hub) {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+					fmt.Printf("[write error]: %v\n", err.Error())
+					break
+				}
 				break
 			}
 
@@ -115,7 +100,7 @@ func (c *Client) writePump(hub *Hub) {
 			}
 
 			if err := w.Close(); err != nil {
-				fmt.Printf("[close error]: %v\n", err.Error())
+				fmt.Printf("[writer close error]: %v\n", err.Error())
 				break
 			}
 		case <-ticker.C:
@@ -142,16 +127,18 @@ func wsserver(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	fmt.Printf("==> new connection accepted from watcher %s\n", r.RemoteAddr)
+	fmt.Printf("new connection accepted from watcher %s\n", r.RemoteAddr)
 
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	client.dir = r.Header.Get("dir")
+
 	hub.register <- client
 
-	go client.writePump(hub)
+	go client.write(hub)
+	client.read()
 
-	_, _, readErr := client.conn.ReadMessage()
-	if readErr != nil {
-		fmt.Printf("[watcher crash]: %v\n", readErr.Error())
-	}
+	// _, _, readErr := client.conn.ReadMessage()
+	// if readErr != nil {
+	// 	fmt.Printf("[watcher crash]: %v\n", readErr.Error())
+	// }
 }
