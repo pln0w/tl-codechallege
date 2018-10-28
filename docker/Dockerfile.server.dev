@@ -4,12 +4,14 @@ COPY ./server /go/src/server
 
 WORKDIR /go/src/server
 
+RUN mkdir /trash
 RUN mkdir /logs
 
 RUN go get -v ./...
 RUN go install -v ./...
 
+RUN go get github.com/pln0w/fresh
 COPY ./runner.conf /runner.conf
-CMD go get github.com/pilu/fresh && fresh -c /runner.conf
+CMD fresh -c /runner.conf
 
 EXPOSE 3000

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the clients
@@ -25,23 +24,26 @@ func newHub() *Hub {
 	}
 }
 
+func (h *Hub) dumpClients() {
+	clientsMap := []string{}
+	for cl := range h.clients {
+		clientsMap = append(clientsMap, cl.conn.RemoteAddr().String())
+	}
+	fmt.Printf("connected clients: %v\n", clientsMap)
+}
+
 func (h *Hub) run() {
 	for {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
+			h.dumpClients()
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
 			}
-		}
-
-		for _ = range time.Tick(3000 * time.Millisecond) {
-			fmt.Println("CONNCETED WORKERS")
-			for cl := range h.clients {
-				fmt.Println(" ==> " + cl.conn.RemoteAddr().String())
-			}
+			h.dumpClients()
 		}
 	}
 }

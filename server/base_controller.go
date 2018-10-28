@@ -2,10 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // BaseController structure
@@ -25,7 +24,8 @@ func (ctrl *BaseController) SendJSON(w http.ResponseWriter, v interface{}, code 
 	// Marshal any object to JSON format
 	content, err := json.Marshal(v)
 	if err != nil {
-		log.Error(err.Error())
+		fmt.Printf("%v", err.Error())
+
 		w.WriteHeader(http.StatusInternalServerError)
 		io.WriteString(w, `{"error": "Internal server error"}`)
 	} else {
@@ -45,7 +45,7 @@ func (ctrl *BaseController) HandleError(err error, w http.ResponseWriter, status
 		"message": err.Error(),
 	}
 
-	log.Error(err.Error())
+	fmt.Printf("%v\n", err.Error())
 
 	// Set proper return status or let 500 as default
 	returnStatus := http.StatusInternalServerError

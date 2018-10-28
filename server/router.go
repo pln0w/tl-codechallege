@@ -1,9 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 )
@@ -37,7 +36,7 @@ var (
 // LogRequest - logs each request details
 func LogRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		fmt.Printf("%s %s %s\n", r.Method, r.URL, r.RemoteAddr)
 		handler.ServeHTTP(w, r)
 	})
 }

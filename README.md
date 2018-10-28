@@ -1,10 +1,11 @@
-# Code challenge project - communication between microservices
+# Fun project - communication between microservices, using WebSockets
 
 ## How to build
 1. `make run` # build images  
-2. `docker-compose up -d` # run single instances  
-3. `docker-compose up --scale node-slave=6 -d` # scale workers   
+2. `docker-compose up` # run stack and attach containers output
 
+Add watchers  
+`docker-compose run -d watcher-node` # run watcher   
 
 ## How to test  
-`make test`
+`make test` # hit GET / http://filewatcher.local

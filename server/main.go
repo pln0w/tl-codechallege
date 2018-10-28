@@ -3,26 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
-
 	"net/http"
 	"os"
 )
 
 var hub *Hub
-
-func init() {
-
-	// Log as JSON instead of the default ASCII formatter.
-	log.SetFormatter(&log.TextFormatter{DisableTimestamp: true})
-
-	// Log to docker container output
-	log.SetOutput(os.Stdout)
-
-	// Set info log level
-	log.SetLevel(log.InfoLevel)
-}
 
 func main() {
 
@@ -43,9 +28,10 @@ func main() {
 	router := NewRouter()
 
 	// Serve over HTTP
-	if err := http.ListenAndServe(*addr, router); err != nil {
-		log.Error(err.Error())
-	}
+	hostname, _ := os.Hostname()
+	fmt.Printf("SERVER %s is listening at port %s\n", hostname, port)
 
-	fmt.Printf("SERVER %s listening on [http: %s]\n", os.Getenv("WHOAMI"), port)
+	if err := http.ListenAndServe(*addr, router); err != nil {
+		fmt.Printf("[server error]: %v\n", err.Error())
+	}
 }

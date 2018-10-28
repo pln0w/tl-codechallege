@@ -15,10 +15,6 @@ type Directory struct {
 	Files []string
 }
 
-type Watcher struct {
-	Addr string
-}
-
 // NewHandlerController - returns pointer to HandlerController struct
 func NewHandlerController() *HandlerController {
 	return &HandlerController{
@@ -31,23 +27,19 @@ func NewHandlerController() *HandlerController {
 func (ctrl *HandlerController) Index(w http.ResponseWriter, r *http.Request) {
 
 	var directories []*Directory
-	var watchers []*Watcher
 
-	for i := 0; i < len(watchers); i++ {
+	for i := 0; i < len(hub.clients); i++ {
 		directories = append(directories, &Directory{
-			Path:  "",
+			Path:  "/data",
 			Files: []string{"", ""},
 		})
 	}
 
-	for c := range hub.clients {
-		c.send <- []byte("test")
-	}
-
-	directories = append(directories, &Directory{
-		Path:  "",
-		Files: []string{"", ""},
-	})
+	go func() {
+		for c := range hub.clients {
+			c.send <- []byte("test")
+		}
+	}()
 
 	res := map[string]interface{}{
 		"status":   http.StatusOK,

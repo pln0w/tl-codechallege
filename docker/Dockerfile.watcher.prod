@@ -3,6 +3,7 @@ FROM golang:alpine AS builder
 COPY ./watcher /go/src/watcher
 WORKDIR /go/src/watcher
 
+RUN mkdir /trash
 RUN mkdir /logs
 
 RUN apk add --no-cache git
