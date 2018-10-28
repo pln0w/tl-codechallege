@@ -16,6 +16,7 @@ type Hub struct {
 	unregister chan *Client
 }
 
+// newHub create instance of connections hub structure object
 func newHub() *Hub {
 	return &Hub{
 		register:   make(chan *Client),
@@ -24,14 +25,25 @@ func newHub() *Hub {
 	}
 }
 
-func (h *Hub) dumpClients() {
+// getClients returns slice of clients remote addresses
+func (h *Hub) getClients() []string {
 	clientsMap := []string{}
 	for cl := range h.clients {
-		clientsMap = append(clientsMap, cl.conn.RemoteAddr().String())
+		record := fmt.Sprintf("ip=%s, dir=%s", cl.conn.RemoteAddr().String(), cl.dir)
+		clientsMap = append(clientsMap, record)
 	}
+
+	return clientsMap
+}
+
+// dumpClients prints connected clients remote addresses to standard output
+func (h *Hub) dumpClients() {
+	clientsMap := h.getClients()
 	fmt.Printf("connected clients: %v\n", clientsMap)
 }
 
+// run function listens for channels signals to add or remove client connection
+// to hub clients collection
 func (h *Hub) run() {
 	for {
 		select {

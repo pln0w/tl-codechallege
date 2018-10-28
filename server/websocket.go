@@ -145,6 +145,7 @@ func wsserver(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("==> new connection accepted from watcher %s\n", r.RemoteAddr)
 
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client.dir = r.Header.Get("dir")
 	hub.register <- client
 
 	go client.writePump(hub)

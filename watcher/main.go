@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -25,6 +26,11 @@ func main() {
 		lbhost = os.Getenv("LB_HOST")
 	}
 
+	dir := os.Getenv("DIR_PATH")
+	if os.Getenv("DIR") != "" {
+		dir = os.Getenv("DIR")
+	}
+
 	// Prepare WebSocket connection URL
 	var wsaddr = flag.String("wsaddr", fmt.Sprintf("%s:%s", lbhost, lbport), "WebSocker service URL")
 	flag.Parse()
@@ -38,7 +44,10 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 
 	// Dial websockets server
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	var header http.Header
+	header = make(http.Header)
+	header.Add("dir", dir)
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
 		fmt.Printf("[dial error]: %v\n", err.Error())
 	}

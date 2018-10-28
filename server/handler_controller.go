@@ -27,23 +27,23 @@ func NewHandlerController() *HandlerController {
 func (ctrl *HandlerController) Index(w http.ResponseWriter, r *http.Request) {
 
 	var directories []*Directory
-
-	for i := 0; i < len(hub.clients); i++ {
+	for c := range hub.clients {
+		files := []string{}
 		directories = append(directories, &Directory{
-			Path:  "/data",
-			Files: []string{"", ""},
+			Path:  c.dir,
+			Files: files,
 		})
 	}
 
-	go func() {
-		for c := range hub.clients {
-			c.send <- []byte("test")
-		}
-	}()
+	// go func() {
+	// 	for c := range hub.clients {
+	// 		c.send <- []byte("test")
+	// 	}
+	// }()
 
 	res := map[string]interface{}{
-		"status":   http.StatusOK,
-		"response": directories,
+		"status":      http.StatusOK,
+		"directories": directories,
 	}
 
 	ctrl.SendJSON(w, &res, http.StatusOK)
@@ -62,6 +62,17 @@ func (ctrl *HandlerController) HealthCheck(w http.ResponseWriter, r *http.Reques
 	res := map[string]interface{}{
 		"status":   http.StatusOK,
 		"hostname": hostname,
+	}
+
+	ctrl.SendJSON(w, &res, http.StatusOK)
+}
+
+// DumpWatchers - function returns connected watchers details
+func (ctrl *HandlerController) DumpWatchers(w http.ResponseWriter, r *http.Request) {
+
+	res := map[string]interface{}{
+		"status":   http.StatusOK,
+		"watchers": hub.getClients(),
 	}
 
 	ctrl.SendJSON(w, &res, http.StatusOK)

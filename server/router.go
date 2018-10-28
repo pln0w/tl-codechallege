@@ -30,6 +30,10 @@ var (
 			"HealthCheck", "GET",
 			"/health", handler.HealthCheck,
 		},
+		Route{
+			"DumpWatchers", "GET",
+			"/watchers", handler.DumpWatchers,
+		},
 	}
 )
 
