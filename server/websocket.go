@@ -17,14 +17,6 @@ const (
 
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = 2
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 512
-)
-
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
 )
 
 var upgrader = websocket.Upgrader{
@@ -44,32 +36,15 @@ type Client struct {
 
 	// Directory to watch
 	dir string
+
+	// Current list of files
+	files []string
 }
 
-// read function gets messages from the websocket connection
-func (c *Client) read() {
-	defer func() {
-		c.conn.Close()
-	}()
-
-	for {
-		_, received, err := c.conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				fmt.Printf("[read error]: %v\n", err.Error())
-			}
-			break
-		}
-
-		fmt.Printf("received: %s\n", received)
-
-		// if received == "pattern" { do() }
-	}
-}
-
-// write function sends messages to the websocket connection.
-func (c *Client) write(hub *Hub) {
+// function that keeps alive client by periodical ping
+func (c *Client) write() {
 	ticker := time.NewTicker(pingPeriod)
+
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
@@ -78,30 +53,15 @@ func (c *Client) write(hub *Hub) {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-					fmt.Printf("[write error]: %v\n", err.Error())
-					break
+					fmt.Printf("[ERROR] (write close message error): %v\n", err.Error())
 				}
-				break
+				return
 			}
-
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				fmt.Printf("[next writer error]: %v\n", err.Error())
-				break
-			}
-			w.Write(message)
-
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
-				fmt.Printf("[writer close error]: %v\n", err.Error())
-				break
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				fmt.Printf("[ERROR] (write error): %v\n", err.Error())
+				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -109,7 +69,7 @@ func (c *Client) write(hub *Hub) {
 				if websocket.IsUnexpectedCloseError(err) || websocket.IsCloseError(err) {
 					c.conn.Close()
 				} else {
-					fmt.Printf("[watcher crash]: %v\n", err.Error())
+					fmt.Printf("[ERROR] (watcher unexpectedly crashed): %v\n", err.Error())
 				}
 				hub.unregister <- c
 				return
@@ -118,11 +78,41 @@ func (c *Client) write(hub *Hub) {
 	}
 }
 
+// read function gets messages from the websocket connection
+func (c *Client) read() {
+	defer func() {
+		hub.unregister <- c
+		c.conn.Close()
+	}()
+
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	var received []string
+
+	for {
+		err := c.conn.ReadJSON(&received)
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+				fmt.Printf("[ERROR] (read error): %v\n", err.Error())
+			}
+			break
+		}
+
+		if len(received) > 0 {
+			c.files = received
+		}
+	}
+}
+
 // serveWs handles websocket requests from the peer.
 func wsserver(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Printf("[client %s error]: %v", r.RemoteAddr, err.Error())
+		fmt.Printf("[ERROR] (upgrader error for client %s): %v", r.RemoteAddr, err.Error())
 		return
 	}
 	defer conn.Close()
@@ -134,11 +124,6 @@ func wsserver(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 	hub.register <- client
 
-	go client.write(hub)
+	go client.write()
 	client.read()
-
-	// _, _, readErr := client.conn.ReadMessage()
-	// if readErr != nil {
-	// 	fmt.Printf("[watcher crash]: %v\n", readErr.Error())
-	// }
 }

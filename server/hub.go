@@ -36,12 +36,6 @@ func (h *Hub) getClients() []string {
 	return clientsMap
 }
 
-// dumpClients prints connected clients remote addresses to standard output
-func (h *Hub) dumpClients() {
-	clientsMap := h.getClients()
-	fmt.Printf("connected clients: %v\n", clientsMap)
-}
-
 // run function listens for channels signals to add or remove client connection
 // to hub clients collection
 func (h *Hub) run() {

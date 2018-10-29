@@ -61,6 +61,7 @@ services:
       - filewatcher
     volumes:
       - './watcher:/go/src/watcher'
+      - './data:/data'
     depends_on:
       - data
       - server-node

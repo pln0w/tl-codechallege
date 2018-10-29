@@ -40,7 +40,7 @@ var (
 // LogRequest - logs each request details
 func LogRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("%s %s %s\n", r.Method, r.URL, r.RemoteAddr)
+		fmt.Printf("[HTTP] (%s %s %s)\n", r.Method, r.URL, r.RemoteAddr)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -62,7 +62,7 @@ func NewRouter() *mux.Router {
 			Handler(LogRequest(route.HandlerFunc))
 	}
 
-	router.HandleFunc("/ws/test", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/ws/register", func(w http.ResponseWriter, r *http.Request) {
 		wsserver(hub, w, r)
 	})
 

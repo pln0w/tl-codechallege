@@ -10,9 +10,10 @@ type HandlerController struct {
 	BaseController
 }
 
+// Directory structure
 type Directory struct {
-	Path  string
-	Files []string
+	Path  string   `json:"path"`
+	Files []string `json:"files"`
 }
 
 // NewHandlerController - returns pointer to HandlerController struct
@@ -29,18 +30,11 @@ func (ctrl *HandlerController) Index(w http.ResponseWriter, r *http.Request) {
 	var directories []*Directory
 
 	for c := range hub.clients {
-		files := []string{}
 		directories = append(directories, &Directory{
 			Path:  c.dir,
-			Files: files,
+			Files: c.files,
 		})
 	}
-
-	// go func() {
-	// 	for c := range hub.clients {
-	// 		c.send <- []byte("test")
-	// 	}
-	// }()
 
 	res := map[string]interface{}{
 		"status":      http.StatusOK,
