@@ -35,7 +35,7 @@ func main() {
 	// Concurrently run watchers updating their files lists
 	go func() {
 		for {
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(10 * time.Second)
 			for c := range hub.clients {
 				go func() {
 					c.send <- []byte(c.dir)
